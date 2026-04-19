@@ -1,0 +1,152 @@
+#pragma once
+
+#include <iostream>
+
+#include <string>
+#include <random>
+#include "nlohmann/json.hpp"
+#include "ILayer.h"
+#include "Activation.h"
+#include "Acts.h"
+
+namespace cobalt_715::nn{
+
+//2D畳み込みニューラルネットワーク
+//ミニバッチ非対応
+struct Conv2DLayer : public ILayer{
+  enum class PaddingType{
+    Valid,//パディングなし
+    Same//出力サイズ維持
+  };
+
+  const size_t in_channels_,out_channels_;//チャンネルサイズ
+  const size_t kh_,kw_;//カーネルサイズ
+  const PaddingType type_;
+  Tensor input_;////逆伝播で必要なため順伝播時この層への入力を保持する
+  Tensor W_,b_;//重み、バイアス
+  Tensor z_,a_;//活性化前、活性化後
+
+  const Activation *act_ = &activations::LeakyReLU;//活性化関数とその微分。デフォルトではLeakyReLU
+
+  //順伝播
+  //前層の出力を受け取る
+  Tensor forward(const Tensor& input) override{
+    #ifndef NDEBUG
+    if(input.get_shape().size() != 3) throw 0;
+
+    if(input.get_shape().at(0) != in_channels_) throw 0;
+    #endif
+
+    input_ = input;
+
+    //出力サイズ
+    size_t zh = 0;
+    size_t zw = 0;
+
+    switch(type_){
+      case PaddingType::Same:
+        zh = input_.get_shape().at(1);
+        zw = input_.get_shape().at(2);
+        break;
+      case PaddingType::Valid:
+        zh = input_.get_shape().at(1) - kh_ / 2;
+        zw = input_.get_shape().at(2) - kw_ / 2;
+        break;
+    }
+
+    z_ = Tensor({out_channels_,zh,zw});
+    a_ = Tensor({out_channels_,zh,zw});
+
+    std::vector<size_t> W_index = {0,0,0,0};
+
+    //i,jはz_,a_の中心とする
+    for(size_t i = 0;i < zh;i++){//std::cout << 1 << std::endl;
+      for(size_t j = 0;j < zw;j++){//std::cout << 2 << std::endl;
+        for(size_t out_c = 0;out_c < out_channels_;out_c++){//std::cout << 3 << std::endl;
+          W_index[0] = out_c;
+          double total = b_.at({out_c});
+
+          for(size_t in_c = 0;in_c < in_channels_;in_c++){//std::cout << 4 << std::endl;
+            W_index[1] = in_c;
+            for(size_t kh = 0;kh < kh_;kh++){//std::cout << 5 << std::endl;
+              W_index[2] = kh;
+              for(size_t kw = 0;kw < kw_;kw++){//std::cout << 6 << std::endl;
+                W_index[3] = kw;
+
+                size_t in_row = i + kh;
+                size_t in_col = j + kw;
+
+                if(type_ == PaddingType::Same){
+                  in_row -= kh_ / 2;
+                  in_col -= kw_ / 2;
+                }
+
+                if(in_row >= input.get_shape().at(1) || in_col >= input.get_shape().at(2) || i + kh < in_row || j + kw < in_col) continue;
+
+                total += input.at({in_c,in_row,in_col}) * W_.at(W_index);
+              }
+            }
+          }
+
+          z_.at({out_c,i,j}) = total;
+          a_.at({out_c,i,j}) = act_->act(total);
+        }
+      }
+    }
+
+    return a_;
+  }
+
+  Tensor backward(const Tensor& grad_output_tensor){
+    return W_;
+  }
+
+  void step(double lr,int batch_size=64){}
+
+  std::string get_type() const{
+    return "Conv2DLayer";
+  }
+
+  std::string to_string() const override{
+    std::string s;
+    s += "activation " + act_->name;
+    s += "\nW\n";
+    s += W_.to_string() + "\nb\n";
+    s += b_.to_string();
+    return s;
+  }
+
+  virtual nlohmann::ordered_json to_json() const{
+    return nlohmann::ordered_json();
+  }
+
+  virtual void load_json(nlohmann::ordered_json j){
+  }
+
+  virtual void random_init(std::mt19937 &gen){}
+
+  Conv2DLayer(size_t in_channels,size_t out_channels,size_t kh,size_t kw)
+    : in_channels_(in_channels),
+      out_channels_(out_channels),
+      kh_(kh),
+      kw_(kw),
+      type_(PaddingType::Same),
+      input_({1}),
+      W_({out_channels,in_channels,kh,kw}),
+      b_({out_channels}),
+      z_({1}),
+      a_({1}){
+
+    double *Wd = W_.data().data();
+    for(size_t i = 0;i < W_.data().size();i++){
+      Wd[i] = 1;
+    }
+
+    double *bd = b_.data().data();
+    for(size_t i = 0;i < b_.data().size();i++){
+      bd[i] = i;
+    }
+  }
+};
+
+}//namespace cobalt_715::nn
