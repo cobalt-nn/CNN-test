@@ -18,10 +18,11 @@ namespace cobalt_715::nn{
 struct Trainer{
 private:
   std::string modelPath;//json形式になっている。モデルを読み書きするテキストファイルを指定する。例"nn/models/model.json"など。コンストラクタで指定する
-  std::vector<std::unique_ptr<ILayer>> layers;//モデル
   const double lr = 0.1;//学習率
 
 public:
+  std::vector<std::unique_ptr<ILayer>> layers;//モデル
+
   //順伝播。入力を受け取る
   Tensor forward_network(const Tensor &x);
 

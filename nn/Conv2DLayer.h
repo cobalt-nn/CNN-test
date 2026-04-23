@@ -190,7 +190,7 @@ struct Conv2DLayer : public ILayer{
       out_channels_(out_channels),
       kh_(kh),
       kw_(kw),
-      type_(PaddingType::Valid),
+      type_(PaddingType::Same),
       input_({1}),
       W_({out_channels,in_channels,kh,kw}),
       b_({out_channels}),
