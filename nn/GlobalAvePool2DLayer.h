@@ -11,7 +11,7 @@ namespace cobalt_715::nn{
 
 //グローバルプーリング
 //全結合に使えるようにする
-struct GlobalAvePoll2DLayer : public ILayer{
+struct GlobalAvePool2DLayer : public ILayer{
   Tensor grad_ = Tensor({1});
   Matrix a_ = Matrix(1,1);
 
@@ -19,7 +19,7 @@ struct GlobalAvePoll2DLayer : public ILayer{
     #ifndef NDEBUG
     if(input.get_shape().size() != 3){
       throw std::invalid_argument(
-        "GlobalAvePoll2DLayer::forward: input must be 3D (C,H,W)"
+        "GlobalAvePool2DLayer::forward: input must be 3D (C,H,W)"
       );
     }
     #endif
@@ -42,15 +42,15 @@ struct GlobalAvePoll2DLayer : public ILayer{
 
   Tensor backward(const Tensor& grad_output_tensor){
     #ifndef NDEBUG
-    if(grad_output_tensor.get_shape().size() != 3){
+    if(grad_output_tensor.get_shape().size() != 2){
       throw std::invalid_argument(
-        "GlobalAvePoll2DLayer::backward: grad_output must be 3D"
+        "GlobalAvePool2DLayer::backward: grad_output must be 2D"
       );
     }
 
     if(Tensor::Matrix_to_Tensor(a_).get_shape() != grad_output_tensor.get_shape()){
       throw std::invalid_argument(
-        "GlobalAvePoll2DLayer::backward: output gradient shape mismatch"
+        "GlobalAvePool2DLayer::backward: output gradient shape mismatch"
       );
     }
     #endif
@@ -58,7 +58,7 @@ struct GlobalAvePoll2DLayer : public ILayer{
     const size_t hw = grad_.get_shape().at(1) * grad_.get_shape().at(2);
 
     for(size_t in_c = 0;in_c < grad_.get_shape().at(0);in_c++){
-      std::fill(grad_.data().begin() + in_c * hw,grad_.data().begin() + (in_c + 1) * hw,grad_output_tensor.at({in_c,0,0}) / hw);
+      std::fill(grad_.data().begin() + in_c * hw,grad_.data().begin() + (in_c + 1) * hw,grad_output_tensor.at({in_c,0}) / hw);
     }
 
     return grad_;

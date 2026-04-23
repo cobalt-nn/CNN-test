@@ -82,13 +82,13 @@ struct Pool2DLayer : public ILayer{
         "Conv2DLayer::backward: output gradient shape mismatch"
       );
     }
-    for(size_t in_c = 0;in_c = a_.get_shape().at(0);in_c++){
+    for(size_t in_c = 0;in_c < a_.get_shape().at(0);in_c++){
       for(size_t a_row = 0;a_row < a_.get_shape().at(1);a_row++){
         for(size_t a_col = 0;a_col < a_.get_shape().at(2);a_col++){
           for(size_t h = 0;h < h_;h++){
             for(size_t w = 0;w < w_;w++){
               if(a_row * h_ + h >= grad_.get_shape().at(1) || a_col * w_ + w >= grad_.get_shape().at(2)) continue;
-              grad_.at({in_c,a_row * h_ + h,a_col * w_ + w}) *= a_.at({in_c,a_row,a_col});
+              grad_.at({in_c,a_row * h_ + h,a_col * w_ + w}) *= grad_output_tensor.at({in_c,a_row,a_col});
             }
           }
         }

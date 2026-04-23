@@ -161,7 +161,10 @@ struct Conv2DLayer : public ILayer{
     return grad_;
   }
 
-  void step(double lr,int batch_size=64){}
+  void step(double lr,int batch_size=64){
+    W_ = W_ - dW_ * lr;
+    b_ = b_ - db_ * lr;
+  }
 
   std::string get_type() const{
     return "Conv2DLayer";
@@ -183,7 +186,13 @@ struct Conv2DLayer : public ILayer{
   virtual void load_json(nlohmann::ordered_json j){
   }
 
-  virtual void random_init(std::mt19937 &gen){}
+  virtual void random_init(std::mt19937 &gen){
+    double limit = sqrt(2.0 / (in_channels_ * kh_ * kw_));
+    std::uniform_real_distribution<double> dist(-limit,limit);
+    for(double &d:W_.data()){
+      d = dist(gen);
+    }
+  }
 
   Conv2DLayer(size_t in_channels,size_t out_channels,size_t kh,size_t kw)
     : in_channels_(in_channels),
@@ -201,15 +210,8 @@ struct Conv2DLayer : public ILayer{
       delta_({1}),
       grad_({1}){
 
-    double *Wd = W_.data().data();
-    for(size_t i = 0;i < W_.data().size();i++){
-      Wd[i] = 1;
-    }
-
-    double *bd = b_.data().data();
-    for(size_t i = 0;i < b_.data().size();i++){
-      bd[i] = i;
-    }
+    std::mt19937 gen(0);
+    random_init(gen);
   }
 };
 

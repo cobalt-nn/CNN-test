@@ -18,7 +18,7 @@ namespace cobalt_715::nn{
 struct Trainer{
 private:
   std::string modelPath;//json形式になっている。モデルを読み書きするテキストファイルを指定する。例"nn/models/model.json"など。コンストラクタで指定する
-  const double lr = 0.1;//学習率
+  const double lr = 0.5;//学習率
 
 public:
   std::vector<std::unique_ptr<ILayer>> layers;//モデル
