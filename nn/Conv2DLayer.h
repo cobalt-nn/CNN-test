@@ -199,7 +199,7 @@ struct Conv2DLayer : public ILayer{
       out_channels_(out_channels),
       kh_(kh),
       kw_(kw),
-      type_(PaddingType::Same),
+      type_(PaddingType::Valid),
       input_({1}),
       W_({out_channels,in_channels,kh,kw}),
       b_({out_channels}),
@@ -208,11 +208,7 @@ struct Conv2DLayer : public ILayer{
       dW_(W_.get_shape()),
       db_(b_.get_shape()),
       delta_({1}),
-      grad_({1}){
-
-    std::mt19937 gen(0);
-    random_init(gen);
-  }
+      grad_({1}){}
 };
 
 }//namespace cobalt_715::nn
