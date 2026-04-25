@@ -1,6 +1,6 @@
 #pragma once
 
-//#include <iostream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <random>
@@ -103,6 +103,8 @@ struct Conv2DLayer : public ILayer{
         }
       }
     }
+
+    //std::cout << "\nconv" << a_.to_string() << std::endl;
 
     return a_;
   }

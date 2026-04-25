@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include "nlohmann/json.hpp"
@@ -49,10 +50,14 @@ struct Pool2DLayer : public ILayer{
       grad_max_index.at(0) = in_c;
       for(size_t a_row = 0;a_row < a_.get_shape().at(1);a_row++){
         for(size_t a_col = 0;a_col < a_.get_shape().at(2);a_col++){
-          double num = -std::numeric_limits<double>::infinity();
+          double num = 0;
           for(size_t h = 0;h < h_;h++){
             for(size_t w = 0;w < w_;w++){
               if(a_row * h_ + h >= input_shape.at(1) || a_col * w_ + w >= input_shape.at(2)) continue;
+              if(w == 0 && h == 0){
+                num = input.at({in_c,a_row * h_ + h,a_col * w_ + w});
+                continue;
+              }
               switch(type_){
                 case PoolType::Max:
                   if(input.at({in_c,a_row * h_ + h,a_col * w_ + w}) > num){
@@ -62,7 +67,7 @@ struct Pool2DLayer : public ILayer{
                   }
                   break;
                 case PoolType::Ave:
-                  num += input.at({in_c,a_row * h_ + h,a_col * w_ + w});
+                  num += input.at({in_c,a_row * h_ + h,a_col * w_ + w}) / (h_ * w_);
                   break;
               }
             }
@@ -72,6 +77,8 @@ struct Pool2DLayer : public ILayer{
         }
       }
     }
+
+    //std::cout << "\npool" << a_.to_string() << std::endl;
 
     return a_;
   }
